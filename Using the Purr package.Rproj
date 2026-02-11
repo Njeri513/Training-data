@@ -1,0 +1,197 @@
+#using the purr::map te o remove unnecessary repetition from our code, like a replacement for loops
+library(dplyr)
+library(purrr)
+set.seed(123)
+df_xyz <- tibble(
+  x = rnorm(10),
+  y = rnorm(10),
+  z = rnorm(10)
+) %>% print()
+#we used across function() to get the means
+df_xyz %>%
+  summarise(
+    across(
+      .cols  = everything(),
+      .fns   = mean,
+      .names = "{col}_mean"
+    )
+  )
+#we also did the same using for loops
+xyz_means <- vector("double", ncol(df_xyz))
+
+for(i in seq_along(df_xyz)) {
+  xyz_means[[i]] <- mean(df_xyz[[i]])
+}
+
+xyz_means
+#doing the same using purr package
+xyz_means <- map_dbl(
+  .x = df_xyz, 
+  .f = mean
+) 
+
+xyz_means
+#map dbl returns a numeric vector
+#map int returns an integer vector
+#map lgl returns a logical vector
+#map chr returns a character vector
+#map dfr returns a dataframe created by row binding results 
+#map dfc returns a dataframe created by column binding results
+
+#using purr for data transfer
+# Importing multiple sheets from an Excel workbook
+library(readxl)
+library(readxl)
+city_ses <- read_excel("C:\\Users\\Jedidah\\Downloads\\city_ses.xlsx")
+View(city_ses)
+#demonstrated below is how you can use purr to load data from the excel sheets
+# Save the file path to an object so we don't have to type it repeatedly 
+# or hard-code it in.
+path <- "city_ses.xlsx"
+
+walk(
+  .x = excel_sheets(path),
+  .f = function(x) {
+    new_nm <- tolower(x)
+    assign(new_nm, read_excel(path, sheet = x), envir = .GlobalEnv)
+  }
+)
+#map returns one thing hence we preferred using walk() in the code above
+
+#code below used to create one dataframe
+# Passing list_of_df to bind_rows()
+bind_rows(list_of_df)
+## Using map_dfr() to directly produce the same result
+cities <- map_dfr(
+  .x = excel_sheets(path),
+  .f = ~ read_excel(path, sheet = .x)
+)cities
+#using purr lambda style to make our code more concise
+# Using map_dfr() to directly produce the same result
+path <- "city_ses.xlsx"
+
+walk(
+  .x = excel_sheets(path),
+  .f = ~ assign(tolower(.), read_excel(path, sheet = .), envir = .GlobalEnv)
+)
+
+# Using purrr for data management
+#Adding NA at multiple positions
+#simulating some data
+library(tibble)
+set.seed(123)
+df_xyz <- tibble(
+  x = rnorm(10),
+  y = rnorm(10),
+  z = rnorm(10)
+) %>% print()
+#previously used the code to add missing values to our dataframe
+df_xyz$x[2] <- NA_real_
+df_xyz$y[4] <- NA_real_
+df_xyz$z[6] <- NA_real_
+df_xyz
+
+#creating a function that may be used to ass missing values that also puts position into consideration
+add_na_at <- function(vect, pos) {
+  vect[[pos]] <- NA
+}
+#testing out the function
+add_na_at(df_xyz$x, 2) %>% print()
+#we'd like it to return the entire vector not one value
+add_na_at <- function(vect, pos) {
+  vect[[pos]] <- NA
+  vect
+}
+add_na_at(df_xyz$x, 2)
+library(dplyr)
+# using mutate to add NA values to each column in our data frame at a position of our choosing
+df_xyz %>% 
+  mutate(
+    x = add_na_at(x, 2),
+    y = add_na_at(y, 4),
+    z = add_na_at(z, 6)
+  )
+#using purr to come up with a better solution that has less repetition
+#please note that we added arguments ,2 indicating the position where we'd like NA to the dataframe
+map(
+  .x = df_xyz,
+  .f = add_na_at, 2
+  )
+#alternatively we can use purr lambda to pass to .f still gets us the desired result
+map(
+.x = df_xyz,
+.f = ~ add_na_at(.x, 2)
+)
+#we can easily make this into a data frame
+map(
+  .x = df_xyz,
+  .f = ~ add_na_at(.x, 2)
+) %>% as.data.frame()
+#alternatively use map dpc
+map_dfc(
+  .x = df_xyz,
+  .f = ~ add_na_at(.x, 2)
+)#this yields the same result
+#multiple positions where NA is iterating
+#when working with a large data set
+set.seed(8142020)
+
+map2_dfc(
+  .x = df_xyz,
+  .y = sample(1:10, 3, TRUE),
+  .f = ~ add_na_at(.x, .y)
+)
+#here's what our code would look like if we used an anonymous function
+map2_dfc(
+  .x = df_xyz,
+  .y = c(2, 4, 6),
+  .f = function(vect, pos) {
+    vect[[pos]] <- NA
+    vect
+  }
+)
+#if we used purr lambda the anonymous function would instead look like this
+map2_dfc(
+  .x = df_xyz,
+  .y = c(2, 4, 6),
+  .f = ~ {
+    .x[[.y]] <- NA
+    .x
+  }
+)
+#Detecting matching values by position
+#simulate data frame
+people_1 <- tribble(
+  ~id_1, ~name_first_1, ~name_last_1, ~street_1,
+  1,     "Easton",      NA,           "Alameda",
+  2,     "Elias",       "Salazar",    "Crissy Field",
+  3,     "Colton",      "Fox",        "San Bruno",
+  4,     "Cameron",     "Warren",     "Nottingham",
+  5,     "Carson",      "Mills",      "Jersey",
+  6,     "Addison",     "Meyer",      "Tingley",
+  7,     "Aubrey",      "Rice",       "Buena Vista",
+  8,     "Ellie",       "Schmidt",    "Division",
+  9,     "Robert",      "Garza",      "Red Rock",
+  10,    "Stella",      "Daniels",    "Holland"
+)
+people_2 <- tribble(
+  ~id_2, ~name_first_2, ~name_last_2, ~street_2,
+  1,     "Easton",      "Stone",      "Alameda",
+  2,     "Elas",        "Salazar",    "Field",
+  3,     NA,            "Fox",        NA,
+  4,     "Cameron",     "Waren",      "Notingham",
+  5,     "Carsen",      "Mills",      "Jersey",
+  6,     "Adison",      NA,           NA,
+  7,     "Aubrey",      "Rice",       "Buena Vista",
+  8,     NA,            "Schmidt",    "Division",
+  9,     "Bob",         "Garza",      "Red Rock",
+  10,    "Stella",      NA,           "Holland"
+)
+
+people <- people_1 %>% bind_cols(people_2) %>%  print()
+#function we had created to help us get dummy variables
+is_match <- function(value_1, value_2) {
+  result <- value_1 == value_2
+  result <- if_else(is.na(result), FALSE, result)
+  result
+}
