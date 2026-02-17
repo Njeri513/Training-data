@@ -1,0 +1,60 @@
+#loading the required packages
+library(BiocManager)
+
+BiocManager::install("Bioconductor")
+library(BiocVersion)
+
+library(Deseq2)
+#creating a small DNA sequence
+dna <- "ATGCGTACGTTAGCTAGCGTAGCTTAA"
+#count nucleotides
+table(strsplit(dna, "")[[1]])
+#calculate GC content
+letters <- strsplit(dna, "")[[1]]
+gc_content <- sum(letters == "G" | letters == "C") / length(letters)
+gc_content
+
+#Get Reverse Complement
+complement <- chartr("ATGC", "TACG", dna)
+reverse_complement <- paste(rev(strsplit(complement, "")[[1]]), collapse="")
+reverse_complement
+#we will now translate this into a protein sequence
+BiocManager::install("Biostrings")
+
+library(Biostrings)
+#the code for translating the sequence
+dna_seq <- DNAString(dna)
+translate(dna_seq)
+
+#introduced a mutation single nucleotide polymorphism
+#creating a mutated sequence
+original <- "ATGCGTACGTTAGCTAGCGTAGCTTAA"
+letters <- strsplit(original, "")[[1]] #allows us to see the letters clearly
+
+# Introduce SNP at position 5
+letters[5] <- "A"
+mutated <- paste(letters, collapse = "")
+mutated
+
+#the code below will check for mutations lets see whether it successfully identifies the area that we changed 
+orig_letters <- strsplit(original, "")[[1]]
+mut_letters  <- strsplit(mutated, "")[[1]]
+
+#the code below will identify the point where theres a mutation
+which(orig_letters != mut_letters)
+
+#the code below helps us to view the actual change it outlines the position the original letter and what it was mutated to
+cbind(Position = which(orig_letters != mut_letters),
+      Original = orig_letters[orig_letters != mut_letters],
+      Mutated  = mut_letters[orig_letters != mut_letters])
+
+#checking whether the mutation will have an effect on the protein made
+library(Biostrings)
+
+orig_protein <- translate(DNAString(original))
+mut_protein  <- translate(DNAString(mutated))
+orig_protein
+mut_protein
+
+#we could additionally use this code to compare them
+orig_protein == mut_protein #it returns the answer false which means the mutation also had an effect on the the consequent protein formed
